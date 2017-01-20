@@ -1,8 +1,10 @@
 ---
 title: "IODS course project"
+author: "Herman"
 output:
   html_document:
     theme: cosmo
+    highlight: tango
     toc: true
     toc_depth: 2
     fig_caption: true

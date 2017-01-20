@@ -1,0 +1,9 @@
+---
+title: "README"
+author: "Herman"
+date: "January 20, 2017"
+output: html_document
+---
+Exploring
+
+https://github.com/hsavinen/IODS-project/
