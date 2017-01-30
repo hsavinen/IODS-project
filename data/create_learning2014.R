@@ -27,3 +27,12 @@ keep_columns <- c("gender","Age","Attitude", "Deep", "Stra", "Surf", "Points")
 analysis_learning2014 <- select(learning2014,one_of(keep_columns))
 
 analysis_learning2014 <- filter(analysis_learning2014, Points != 0)
+
+setwd("C:/Users/Admin/Documents/GitHub/IODS-project/data")
+
+write.csv(analysis_learning2014, file = "learning2014.csv", row.names=FALSE)
+
+d <- read.csv("learning2014.csv")
+str(d)
+head(d)
+
