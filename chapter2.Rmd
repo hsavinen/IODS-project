@@ -1,7 +1,92 @@
-# Insert chapter 2 title here
+---
+output: html_document
+---
 
-*Describe the work you have done this week and summarize your learning.*
+# Linear regression
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+*This week I have practised data wrangling techniques and learned how to implement and evaluate linear regression models.*
+
+
+
+Starting off with importing two libraries for data visualisation and and reading the analysis dataset into R-dataframe.
+
+```{r, warning = FALSE}
+library(GGally)
+library(ggplot2)
+
+learning2014 <- read.csv("C:/Users/Admin/Documents/GitHub/IODS-project/data/learning2014.csv")
+```
+
+The structure and dimensions of the data can be explored using R's str() -function.
+
+```{r, warning = FALSE}
+str(learning2014)
+``` 
+
+The data originates from an international survey of approaches to learning and holds 166 observations of 7 variables. Following variables have been combined from several answers:
+
+- Deep, measuring deep learning approach
+- Stra, measuring strategic learning approach
+- Surf, measuring surface learning approach
+
+
+
+
+Summaries and a graphical overview provide a convenient way to further inspect the data and to spot possible relationships between variables.
+
+```{r, warning = FALSE}
+summary(learning2014)
+p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+p
+
+```
+
+As we can see, the variables seem reasonably normally distributed, excluding age. Using different colors for genders in plotting could reveal some differences, but it must be noted that there are considerably less males in the data. 
+
+Judging from the scatterplots and correlations, attitude and strategic and surface learning approaches could be associated with exam points. A linear regression model with points as a dependent variable can be used to assess if these three variables predict the exam points.
+
+
+Fitting the regression model.
+
+```{r, warning = FALSE}
+regression_model <- lm(Points ~ Attitude + Stra + Surf, data = learning2014)
+summary(regression_model)
+```
+
+The summary of the model holds the significance tests of the coefficents. The p-values show that Attitude variable is the only one having a statistically significant relationship with the dependent variable, null hypothesis being that the value of the parameter is zero. 
+
+
+Fitting the model again with Attitude as the explanatory variable.
+
+```{r, warning = FALSE}
+regression_model <- lm(Points ~ Attitude, data = learning2014)
+summary(regression_model)
+```
+
+Now we have a simple linear regression model. As mentioned above, Attitude has a statistically significant relationship with exam points. Multiple R-squared tells how much of the variance of the dependent variable is explained by the model. 0.1906 is quite low as the scale ranges from 0 to 1, but quite expected as the model holds only one explanatory variable. It should be addes, that in many research fields, especially involving human behaviour and other complex and hard to predict phenomena, the R-squared values are seldom very high. 
+
+
+
+The question of model validation has to do with the assumptions of the model and how well they fit reality. Linear regression has following important assumprions:
+
+- The errors are normally distributed
+- The errors are not correlated
+- The errors have constant variance
+
+
+Drawing diagnostic plots to validate the model.
+```{r, warning=FALSE}
+plot(regression_model, which = c(1,2,5), par(mfrow = c(2,2)))
+``` 
+
+Conclusions from the diagnostic plots:
+
+- No pattern is observable in the scatter plot showing residuals and fitted values. This implies that the constant variance assumptions holds, so the errors are independent. 
+
+- The QQ-plot has the residuals falling reasonably well on the line. Normality assumprions seems to be met. 
+
+- Lastly, reiduals vs leverage plot has no outliers with much leverage on the model. 
+
+
+
+

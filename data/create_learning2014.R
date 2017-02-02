@@ -23,6 +23,9 @@ learning2014$Surf <- rowMeans(surface_columns)
 strategic_columns <- select(learning2014, one_of(strategic_questions))
 learning2014$Stra <- rowMeans(strategic_columns)
 
+learning2014$Attitude <- learning2014$Attitude / 10
+
+
 keep_columns <- c("gender","Age","Attitude", "Deep", "Stra", "Surf", "Points")
 analysis_learning2014 <- select(learning2014,one_of(keep_columns))
 
