@@ -1,0 +1,108 @@
+---
+output: html_document
+---
+
+# Logistic regression
+
+```{r, warning = FALSE}
+library(ggplot2)
+library(GGally)
+library(tidyr)
+library(dplyr)
+
+alc <- read.table("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/alc.txt", sep = ',', header = TRUE)
+
+colnames(alc)
+```
+
+These are the variables present in the data, which has been joined from two surveys on student alchol consumption in Portugal.  Those students that were not present in both datasets have been excluded and the variables not used for joining the two data have been combined by averaging. These completely new variables have been calculated:
+
+- 'alc_use' is the average of workday and weekend alchol use ('Dalc' and 'Walc')
+- 'high_use' is TRUE if 'alc_use' is higher than 2 and FALSE otherwise
+
+I have chosen 4 variables that I would assume to have a relatisonship with alcohol use:
+
+- 'sex' as males to my understanding tend to consume more alchol in most societies. 
+- 'abscenses', which refers to absences from school. Students could skip school to go drinking instead, or possibly to deal with hangover. 
+- 'goout' (going out with friends) should be associated with higher alcohol consumption as drinking is a social event for most.
+- 'G3' (final grade). Spending more time drinking could result in spending less time studying, which could be reflected in students success in school. 
+
+
+
+Let's graphically explore the chosen variabes and their relationship with alchol consumption. Starting off with final grades.
+
+```{r, warning = FALSE}
+g1 <- ggplot(alc, aes(x = high_use, y = G3))
+g1 +  geom_boxplot()
+```
+
+So it seems like those students with high alcohol consumption have lower grades. On the other hand the difference doesen't seem to be very large, so it could be that this isn't statistically significant.
+
+
+```{r, warning = FALSE}
+g2 <-ggplot(data = alc, aes(x = sex))
+g2 + geom_bar(aes(fill = high_use))
+```
+
+As expected, males definently have more high use cases. 
+
+
+
+```{r, warning = FALSE}
+g3 <-ggplot(data = alc, aes(x = goout))
+g3 + geom_bar(aes(fill = high_use))
+```
+
+
+Going out with friends seems to fit well my hypothesis, proportion of high users grows with it.
+
+High users also have more absences as shown below.
+
+```{r, warning = FALSE}
+g4 <- ggplot(data = alc, aes(x = high_use, y = absences))
+g4 + geom_boxplot()
+```
+
+
+To explore the relationship between these variables and the binary high/low alcohol consumption variable as the target variable, a logistic regression model is used.
+
+
+```{r, warning = FALSE}
+m <- glm(high_use ~ goout + absences + sex + G3, data = alc, family = "binomial")
+summary(m)
+```
+
+
+The summary of the model shows that the final grades (G3) coefficent is not signigicant. To further interpret this model, it is necessary to have a look at the coefficents as odds ratios and se the confidence interwalls for them. 
+
+
+```{r}
+OR <- coef(m) %>% exp
+CI <- confint(m) %>% exp
+cbind(OR, CI)
+```
+
+In the case of G3 variable, the confidence interval of odds ratio includes 1, which means that a change in the final grade doesn't affect the odds of having high alcohol consumption. Therefore it doesn't have a statistical relatioship with alchohol use in this data. G3 variable is now dropped as the next task is to see the predictive power of this model.
+
+```{r}
+m <- glm(high_use ~ goout + absences + sex, data = alc, family = "binomial")
+probabilities <- predict(m, type = "response")
+alc <- mutate(alc, probability = probabilities)
+alc <- mutate(alc, prediction = probability > 0.5)
+```
+
+
+Predictions are evaluated below. Predictions and real values are cross tabulated for easy comparison. The [1] is the average number of incorrect predictions.
+
+```{r}
+table(high_use = alc$high_use, prediction = alc$prediction)
+
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+loss_func(class = alc$high_use, prob = alc$probability)
+```
+
+The model predicts low alchol consumption fairly well but doesn't quite pick up those high consmuption cases.
