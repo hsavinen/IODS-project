@@ -1,0 +1,140 @@
+---
+output: html_document
+---
+
+# Clustering and classification
+
+```{r}
+library(dplyr)
+library(MASS)
+data('Boston')
+str(Boston)
+```
+
+This weeks data has 14 variabes on housing values in 506 suburbs of Boston. 
+
+```{r}
+summary(Boston)
+
+```
+
+Looking at the variable summaries, some extremities in the distributions are eye catching. For example some observations have a strikingly high per capita crime rate ('crim'). Also the distribution of proportion of blacks is quite uneven, presumably a sign of ethnic segregation in the suburbs. 
+
+```{r}
+pairs(Boston)
+```
+
+Some possible relationships between variables can be drawn from with this scatter plot matrix. For example:
+
+- Higher crime rate ('crim'):  more units built pre 1940s ('age') and less distance to employement centres ('dis') 
+
+Next, the data is standardised to meet the assumptions of Linear discriminant analysis.
+The assumptions are:
+
+- normal distribution of variables on condition of the classes
+- variables must have same variances
+
+
+```{r}
+boston_scaled <- scale(Boston)
+boston_scaled <- as.data.frame(boston_scaled)
+summary(boston_scaled)
+```
+
+
+Creating a categorical variable of the crime rate. The quantiles are used as the break points in the variable. Dropping the old crime rate variable from the dataset. 
+
+
+```{r}
+scaled_crim <- boston_scaled$crim
+bins <- quantile(scaled_crim)
+
+crime <- cut(scaled_crim, breaks = bins, include.lowest = TRUE, labels = c("low", "med_low", "med-high", "high"))
+
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+boston_scaled <- data.frame(boston_scaled, crime)
+
+```
+
+
+Dividing the data to train and test sets, so that 80% of the data belongs to the train set.
+
+
+```{r}
+n <- nrow(boston_scaled)
+ind <- sample(n,  size = n * 0.8)
+
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+
+correct_classes <- test$crime
+test <- dplyr::select(test, -crime)
+```
+
+
+Fitting a linear discriminant analysis on the train set. Target variable is the previously created categorical crime rate. Predictor variables are all the other variables in the data. Plotting the results.
+
+
+```{r}
+lda.fit <- lda(crime ~ ., data = train)
+lda.fit
+
+classes <- as.numeric(train$crime)
+plot(lda.fit, dimen = 2, col= classes, pch = classes)
+```
+
+
+Now that the model is trained, its predictive performance can be tested on the test set created earlier.
+
+
+```{r}
+lda.pred <- predict(lda.fit, newdata = test)
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+
+
+The cross tabulation of correct and predicted class shows that the model performed nicely on the high crime class, but not so well on others. This was already evident in the LDA plot. 
+
+Now let's look at k-means clustering with the original dataset, which is again standardized to fit the assumptions of the algorithm. Afte the scaling, an euclidean distance matrix is created.
+
+```{r}
+data("Boston")
+scaled_data <- scale(Boston)
+
+dist_eu <- dist(scaled_data)
+```
+
+
+The number of clusters can be decided by looking at how the total of within cluster sum of squares (WCSS). The best number should be the one where WCSS drops rapidly.
+
+
+```{r}
+set.seed(123)
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(dist_eu, k)$tot.withinss})
+plot(1:k_max, twcss, type='b')
+```
+
+
+Two seems to be an appropriate number of classes. 
+
+
+```{r}
+km <-kmeans(dist_eu, centers = 2)
+pairs(scaled_data,col=km$cluster)
+```
+
+
+From the scatter plot matrix where black and red differentiate the two clusters it is possible to inspect how did the algorithm separate the two.
+
+Take the black cluster. These attributes seem to describe te suburbs that fall into it:
+
+- higher crime rate ('crim')
+- lower proportion of residential land zoned for lots over 25,000 sq.ft.('zn')
+- larger proportion of non-retail business acres per town. ('indus')
+- higher nitrogen oxides concentration (parts per 10 million). ('nox')
+- higher proportion of owner-occupied units built prior to 1940. ('age')
+- smaller weighted mean of distances to five Boston employment centres.('dis')
+- better access to radial highways ('rad')
+- higher full-value property-tax rate per \$10,000. ('tax')
+
