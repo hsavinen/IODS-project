@@ -21,3 +21,22 @@ human <- inner_join(hd, gii, by = "country")
 setwd("C:/Users/Admin/Documents/GitHub/IODS-project/data")
 
 write.csv(human, file = "human.csv", row.names=FALSE)
+
+library(stringr)
+
+human <- mutate(human, GNI = str_replace(gni, pattern=",", replace ="") %>% as.numeric)
+
+keep <- c("country", "second_edu_F", "labour_particip_F", "life_expectancy", "edu_expected", "GNI", "maternal_mortality", "adol_birthrate", "repres_parliament")
+human <- select(human, one_of(keep))
+
+human <- filter(human, complete.cases(human))
+
+last <- nrow(human) - 7
+human_ <- human[1:last, ]
+
+rownames(human_) <- human_$country
+
+human_ <- select(human_, -country)
+
+
+write.csv(human_, file = "human.csv", row.names=TRUE)
