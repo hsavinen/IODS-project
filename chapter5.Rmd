@@ -1,0 +1,100 @@
+---
+output: html_document
+---
+
+# Dimensionality reduction techniques
+
+```{r}
+human <- read.csv("C:/Users/Admin/Documents/GitHub/IODS-project/data/human.csv", row.names = 1)
+str(human)
+```
+
+The data has been combined from two datasets of the UN development program: the human development index data and the gender inequality index data. The variables included here are the following:
+
+- Female population with at least some secondary education (second_edu_F)
+- Female labour force participation rate (labour_particip_F)
+- Life expectancy at birth (life_expectancy)
+- Expected years of schooling (edu_expected)
+- Gross national income per capita (GNI)
+- Maternal mortality ratio (maternal_mortality)
+- Adolescent birth rate (adol_birthrate)
+- Share of seats in parliament held by women (repres_parliament)
+
+
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+library(corrplot)
+cor(human) %>% corrplot()
+summary(human)
+```
+
+
+
+
+As one could expect, the correlation matrix plot shows that the variables are quite correlated with each other. Intrestingly however, the share of parliamentary seats held by women and the female labour participitation are the exceptions.  
+
+
+Principal component analysis on the human data.
+
+```{r, warning=FALSE}
+pca_human <- prcomp(human)
+summary(pca_human)
+
+```
+
+
+So the principal component 1 captures prety much the whole variance. Next visualising the pc's and the observations and the original variables with a biplot.
+
+```{r, warning=FALSE}
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+```
+
+
+From here it's clear that the reason for PC1's dominance lies in the distribution of the GNI variable. he analysis can be repeated with standardized variables.
+
+
+```{r}
+human_std <- scale(human)
+pca_human_std <- prcomp(human_std)
+summary(pca_human_std)
+```
+
+```{r}
+biplot(pca_human_std, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "black"))
+```
+
+Now both dimensions seem to capture something more meaningful than just the GNI. My interpretation is that PC1 is about the level of economic development and material standard of living, which translates to the overall health of the population. Countries with higher GNI and life expectancy group to the left and developing countries with higher mortality and birth rates group to the rights. These variables were all correlated as seen in the correlation matrix.
+
+PC2 to my mind tells about the inequality between genders. The original variables associated with it are the share of parliamentary seats held by women and the labour participitation of women. You can see how nordic countries are quite high up on the y-axis with some developing countries there as well. Low on the y-axis, we find for example countries that are economically more developed compared to many Sub-Saharan countries but have more gender inequality. These are located in the Middle East and its surroundings.
+
+
+Next it is time for Multiple Correspondence Analysis on the tea consumption questionnaire data from FactoMineR package.
+
+```{r, message=FALSE, warning=FALSE}
+library(FactoMineR)
+data("tea")
+str(tea)
+```
+
+Choosing some variables of intrest. 
+
+```{r, warning=FALSE}
+library(ggplot2)
+library(tidyr)
+keep_columns <- c("age_Q", "sex", "how", "Tea", "price", "frequency")
+tea_time <- dplyr::select(tea, one_of(keep_columns))
+
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+
+
+```{r}
+mca <- MCA(tea_time, graph = FALSE)
+summary(mca)
+```
+
+```{r}
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+
+I would say this analysis doesn't have much to offer as the only variable that really stands out from the rest is "unknown price". The weakness of the analysis is apparent in the fact that the first two dimensions explain so little of the cumulative variance. 
